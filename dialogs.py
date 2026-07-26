@@ -22,15 +22,6 @@ def show_architecture_modal(plan):
     """
     Display the generated architecture plan.
     """
-
-    if isinstance(plan, list):
-
-        if len(plan) > 0:
-
-            if isinstance(plan[0], dict):
-
-                plan = plan[0].get("text", str(plan))
-
     st.markdown(plan)
 
 

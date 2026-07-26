@@ -167,23 +167,22 @@ if prompt := st.chat_input(placeholder):
                         {},
                     )
 
-                    #
-                    # TODO:
-                    #
-                    # Later this will come directly
-                    # from LangGraph.
-                    #
+                # -------------------------
+                # SRS Generator
+                # -------------------------
 
-                    final_srs = """
-# Software Requirements Specification
+                if "srs_generator" in event:
 
-The following document summarizes the
-parsed cloud infrastructure requirements.
+                    status.info(
+                        "📝 Generating SRS Document..."
+                    )
 
-The infrastructure has been normalized
-into a structured format and will now
-be converted into an architecture plan.
-"""
+                    srs = event["srs_generator"]
+
+                    final_srs = srs.get(
+                        "srs_document",
+                        "",
+                    )
 
                 # -------------------------
                 # Interrupt
