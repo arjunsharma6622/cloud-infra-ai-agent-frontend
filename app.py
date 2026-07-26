@@ -1,366 +1,339 @@
-# # frontend/app.py
-# import streamlit as st
-# import requests
-# import json
-
-# st.set_page_config(layout="wide", page_title="AI Platform Assistant")
-# st.title("👷 AI Platform Engineering Assistant")
-
-# # Initialize session state for messages and streaming cache
-# if "messages" not in st.session_state:
-#     st.session_state.messages = []
-
-# # --- STEP 1: DEFINE LAYOUT COLUMNS ---
-# chat_col, output_col = st.columns([1, 1])
-
-# # --- STEP 2: INITIALIZE THE TAB PLACEHOLDERS FIRST (Prevents NameError) ---
-# with output_col:
-#     st.subheader("Generated Infrastructure Deliverables")
-#     tab1, tab2, tab3 = st.tabs(["1. Extracted Spec", "2. Architecture Plan", "3. Terraform Code"])
-    
-#     with tab1:
-#         spec_placeholder = st.empty()
-#     with tab2:
-#         plan_placeholder = st.empty()
-#     with tab3:
-#         code_placeholder = st.empty()
-
-# # --- STEP 3: RENDER HISTORICAL CACHED DATA IF AVAILABLE ---
-# if "latest_spec" in st.session_state:
-#     spec_placeholder.json(st.session_state.latest_spec)
-# if "latest_plan" in st.session_state:
-#     # Safely extract text block from Gemini content list if needed
-#     plan_data = st.session_state.latest_plan
-#     if isinstance(plan_data, list) and len(plan_data) > 0 and isinstance(plan_data[0], dict):
-#         plan_data = plan_data[0].get("text", str(plan_data))
-#     plan_placeholder.markdown(plan_data)
-# if "latest_code" in st.session_state:
-#     with code_placeholder.container(height=400):
-#         for filename, content in st.session_state.latest_code.items():
-#             st.write(f"**`{filename}`**")
-#             st.code(content.replace("\\n", "\n"), language="hcl", line_numbers=True)
-
-# # --- STEP 4: CHAT CONVERSATION PROCESSING INTERFACE ---
-# with chat_col:
-#     st.subheader("Conversation")
-    
-#     # Display previous messages
-#     for msg in st.session_state.messages:
-#         with st.chat_message(msg["role"]):
-#             st.write(msg["content"])
-            
-#     # Process new prompt inputs
-#     if prompt := st.chat_input("E.g., Build an Azure environment with isolated networks..."):
-#         st.session_state.messages.append({"role": "user", "content": prompt})
-#         with st.chat_message("user"):
-#             st.write(prompt)
-            
-#         with st.status("🧠 Agents are thinking...", expanded=True) as status:
-#             try:
-#                 # Initiate the streaming HTTP call to the FastAPI network endpoint
-#                 response = requests.post("http://localhost:8000/stream", json={"prompt": prompt}, stream=True)
-                
-#                 for line in response.iter_lines():
-#                     if line:
-#                         chunk = json.loads(line.decode("utf-8"))
-                        
-#                         # Capture intent parser outputs
-#                         if "intent_parser" in chunk:
-#                             status.write("✅ **Intent Parser** extracted requirements.")
-#                             spec_data = chunk["intent_parser"].get("project_spec", {})
-#                             st.session_state.latest_spec = spec_data
-#                             spec_placeholder.json(spec_data)
-                            
-#                         # Capture architecture planner outputs
-#                         elif "architecture_planner" in chunk:
-#                             status.write("✅ **Architecture Planner** designed the topology.")
-#                             plan_data = chunk["architecture_planner"].get("architecture_plan", "")
-#                             st.session_state.latest_plan = plan_data
-                            
-#                             # Safely parse text list array format if returned by Gemini client
-#                             if isinstance(plan_data, list) and len(plan_data) > 0 and isinstance(plan_data[0], dict):
-#                                 plan_data = plan_data[0].get("text", str(plan_data))
-#                             plan_placeholder.markdown(plan_data)
-                            
-#                         # Capture terraform code output streams
-#                         elif "iac_generator" in chunk:
-#                             status.write("✅ **IaC Generator** wrote the Terraform code.")
-#                             code_data = chunk["iac_generator"].get("generated_code", {})
-#                             st.session_state.latest_code = code_data
-                            
-#                             code_placeholder.empty()
-#                             with code_placeholder.container(height=400):
-#                                 for filename, content in code_data.items():
-#                                     st.write(f"**`{filename}`**")
-#                                     st.code(content.replace("\\n", "\n"), language="hcl", line_numbers=True)
-                                    
-#                         # Capture validation logs
-#                         elif "validation_agent" in chunk:
-#                             val_data = chunk["validation_agent"]
-#                             if val_data.get("validation_passed"):
-#                                 status.write("✅ **Validation Agent** verified code syntax successfully.")
-#                             else:
-#                                 err = val_data.get('validation_errors', '')
-#                                 status.write(f"⚠️ **Validation Agent** caught syntax anomalies! Routing back for fixing...")
-#                                 status.write(f"```\n{err}\n```")
-                
-#                 status.update(label="Execution Complete!", state="complete", expanded=False)
-#                 st.rerun() # Refresh layout to cleanly persist the historical state boxes
-                
-#             except Exception as e:
-#                 status.update(label="Execution Aborted", state="error")
-#                 st.error(f"Failed to process graph stream workflow: {e}")
-
-
-
-
-# frontend/app.py
-# import streamlit as st
-# import requests
-# import json
-
-# st.set_page_config(layout="wide", page_title="AI Platform Assistant")
-# st.title("Infra AI Agent")
-
-# # Initialize session state for messages and streaming cache
-# if "messages" not in st.session_state:
-#     st.session_state.messages = []
-
-# # --- STEP 1: DEFINE LAYOUT COLUMNS ---
-# chat_col, output_col = st.columns([1, 1])
-
-# # --- STEP 2: INITIALIZE THE TAB PLACEHOLDERS FIRST (Prevents NameError) ---
-# with output_col:
-#     st.subheader("Generated Infrastructure Deliverables")
-#     tab1, tab2, tab3 = st.tabs(["1. Extracted Spec", "2. Architecture Plan", "3. Terraform Code"])
-    
-#     with tab1:
-#         spec_placeholder = st.empty()
-#     with tab2:
-#         plan_placeholder = st.empty()
-#     with tab3:
-#         code_placeholder = st.empty()
-
-# # --- STEP 3: RENDER HISTORICAL CACHED DATA IF AVAILABLE ---
-# if "latest_spec" in st.session_state:
-#     spec_placeholder.json(st.session_state.latest_spec)
-
-# if "latest_plan" in st.session_state:
-#     plan_data = st.session_state.latest_plan
-#     if isinstance(plan_data, list) and len(plan_data) > 0 and isinstance(plan_data[0], dict):
-#         plan_data = plan_data[0].get("text", str(plan_data))
-#     plan_placeholder.markdown(plan_data)
-    
-# if "latest_code" in st.session_state:
-#     # PLACEMENT 1: Fixed code editor height box for the historical views
-#     with code_placeholder.container(height=500):
-#         for filename, content in st.session_state.latest_code.items():
-#             st.markdown(f"### 📄 `{filename}`")
-#             clean_content = content.replace("\\n", "\n").replace("\\t", "  ")
-#             st.code(clean_content, language="hcl", line_numbers=True)
-
-# # --- STEP 4: CHAT CONVERSATION PROCESSING INTERFACE ---
-# with chat_col:
-#     st.subheader("Conversation")
-    
-#     # Display previous messages
-#     for msg in st.session_state.messages:
-#         with st.chat_message(msg["role"]):
-#             st.write(msg["content"])
-            
-#     # Process new prompt inputs
-#     if prompt := st.chat_input("E.g., Build an Azure environment with isolated networks..."):
-#         st.session_state.messages.append({"role": "user", "content": prompt})
-#         with st.chat_message("user"):
-#             st.write(prompt)
-            
-#         with st.status("🧠 Agents are thinking...", expanded=True) as status:
-            # try:
-            #     # Initiate the streaming HTTP call to the FastAPI network endpoint
-            #     response = requests.post("http://localhost:8000/stream", json={"prompt": prompt}, stream=True)
-                
-            #     for line in response.iter_lines():
-            #         if line:
-            #             chunk = json.loads(line.decode("utf-8"))
-                        
-            #             # Capture intent parser outputs
-            #             if "intent_parser" in chunk:
-            #                 status.write("✅ **Intent Parser** extracted requirements.")
-            #                 spec_data = chunk["intent_parser"].get("project_spec", {})
-            #                 st.session_state.latest_spec = spec_data
-            #                 spec_placeholder.json(spec_data)
-                            
-            #             # Capture architecture planner outputs
-            #             elif "architecture_planner" in chunk:
-            #                 status.write("✅ **Architecture Planner** designed the topology.")
-            #                 plan_data = chunk["architecture_planner"].get("architecture_plan", "")
-            #                 st.session_state.latest_plan = plan_data
-                            
-            #                 if isinstance(plan_data, list) and len(plan_data) > 0 and isinstance(plan_data[0], dict):
-            #                     plan_data = plan_data[0].get("text", str(plan_data))
-            #                 plan_placeholder.markdown(plan_data)
-                            
-            #             # Capture terraform code output streams
-            #             elif "iac_generator" in chunk:
-            #                 status.write("✅ **IaC Generator** wrote the Terraform code.")
-            #                 code_data = chunk["iac_generator"].get("generated_code", {})
-            #                 st.session_state.latest_code = code_data
-                            
-            #                 # PLACEMENT 2: Fixed code editor height box for live incoming streams
-            #                 code_placeholder.empty()
-            #                 with code_placeholder.container(height=500):
-            #                     for filename, content in code_data.items():
-            #                         st.markdown(f"### 📄 `{filename}`")
-            #                         clean_content = content.replace("\\n", "\n").replace("\\t", "  ")
-            #                         st.code(clean_content, language="hcl", line_numbers=True)
-                                    
-            #             # Capture validation logs
-            #             elif "validation_agent" in chunk:
-            #                 val_data = chunk["validation_agent"]
-            #                 if val_data.get("validation_passed"):
-            #                     status.write("✅ **Validation Agent** verified code syntax successfully.")
-            #                 else:
-            #                     err = val_data.get('validation_errors', '')
-            #                     status.write(f"⚠️ **Validation Agent** caught syntax anomalies! Routing back for fixing...")
-            #                     status.write(f"```\n{err}\n```")
-                
-            #     status.update(label="Execution Complete!", state="complete", expanded=False)
-            #     st.rerun() # Refresh layout to cleanly persist the historical state boxes
-                
-            # except Exception as e:
-            #     status.update(label="Execution Aborted", state="error")
-            #     st.error(f"Failed to process graph stream workflow: {e}")
-
-
-# frontend/app.py
-import streamlit as st
-import requests
 import json
+import streamlit as st
 
-st.set_page_config(layout="wide", page_title="AI Platform Assistant")
-st.title("Infra AI Agent")
+from styles import CUSTOM_CSS
 
-# Initialize session state for messages and streaming cache
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "is_streaming" not in st.session_state:
-    st.session_state.is_streaming = False
+from state import (
+    init_session_state,
+)
 
-# --- STEP 1: DEFINE LAYOUT COLUMNS ---
-chat_col, output_col = st.columns([1, 1])
+from sidebar import (
+    render_sidebar,
+)
 
-# --- STEP 2: INITIALIZE THE LIVE VIEWPORT ---
-with output_col:
-    st.subheader("Generated Infrastructure Deliverables")
-    # This single placeholder acts as our TV screen during the live stream
-    live_viewport = st.empty()
+from renderer import (
+    render_user_prompt,
+    render_assistant_output,
+)
 
-# --- STEP 3: RENDER HISTORICAL TABS (ONLY WHEN NOT STREAMING) ---
-if not st.session_state.is_streaming and "latest_spec" in st.session_state:
-    # Render the tabs inside the viewport once everything is done
-    with live_viewport.container():
-        tab1, tab2, tab3 = st.tabs(["1. Extracted Spec", "2. Architecture Plan", "3. Terraform Code"])
-        
-        with tab1:
-            st.json(st.session_state.latest_spec)
-            
-        with tab2:
-            plan_data = st.session_state.latest_plan
-            if isinstance(plan_data, list) and len(plan_data) > 0 and isinstance(plan_data[0], dict):
-                plan_data = plan_data[0].get("text", str(plan_data))
-            st.markdown(plan_data)
-            
-        with tab3:
-            with st.container(height=500):
-                for filename, content in st.session_state.latest_code.items():
-                    st.markdown(f"### 📄 `{filename}`")
-                    clean_content = content.replace("\\n", "\n").replace("\\t", "  ")
-                    st.code(clean_content, language="hcl", line_numbers=True)
+from api import (
+    stream_chat,
+    refresh_projects,
+    refresh_history,
+)
 
-# --- STEP 4: CHAT CONVERSATION PROCESSING INTERFACE ---
-with chat_col:
-    st.subheader("Conversation")
-    
-    # Display previous messages
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-            
-    # Process new prompt inputs
-    if prompt := st.chat_input("E.g., Build an Azure environment with isolated networks..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        # Lock the UI into streaming mode to hide the tabs
-        st.session_state.is_streaming = True 
-        
+# -----------------------------------------------------
+# Page Config
+# -----------------------------------------------------
+
+st.set_page_config(
+    page_title="Infra AI Agent",
+    layout="centered",
+    initial_sidebar_state="expanded",
+)
+
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
+# -----------------------------------------------------
+# Initialize Session
+# -----------------------------------------------------
+
+init_session_state()
+
+# -----------------------------------------------------
+# Sidebar
+# -----------------------------------------------------
+
+render_sidebar()
+
+# -----------------------------------------------------
+# Main Page
+# -----------------------------------------------------
+
+st.title("🚀 Infra AI Agent")
+
+st.caption(
+    f"Workspace ID: `{st.session_state.thread_id}`"
+)
+
+st.divider()
+
+# -----------------------------------------------------
+# Render Existing Conversation
+# -----------------------------------------------------
+
+for idx, message in enumerate(st.session_state.messages):
+
+    if message["role"] == "user":
+
         with st.chat_message("user"):
-            st.write(prompt)
-            
-        with st.status("🧠 Agents are thinking...", expanded=True) as status:
-            try:
-                response = requests.post("http://localhost:8000/stream", json={"prompt": prompt}, stream=True)
-                
-                for line in response.iter_lines():
-                    if line:
-                        chunk = json.loads(line.decode("utf-8"))
-                        
-                        # --- 1. INTENT PARSER FINISHES ---
-                        if "intent_parser" in chunk:
-                            status.write("✅ **Intent Parser** extracted requirements.")
-                            spec_data = chunk["intent_parser"].get("project_spec", {})
-                            st.session_state.latest_spec = spec_data
-                            
-                            # Instantly flash the JSON to the right screen
-                            with live_viewport.container():
-                                st.info("👀 **Focus Mode:** Extracting Specification...")
-                                st.json(spec_data)
-                                
-                        # --- 2. ARCHITECTURE PLANNER FINISHES ---
-                        elif "architecture_planner" in chunk:
-                            status.write("✅ **Architecture Planner** designed the topology.")
-                            plan_data = chunk["architecture_planner"].get("architecture_plan", "")
-                            st.session_state.latest_plan = plan_data
-                            
-                            if isinstance(plan_data, list) and len(plan_data) > 0 and isinstance(plan_data[0], dict):
-                                plan_data = plan_data[0].get("text", str(plan_data))
-                                
-                            # Instantly overwrite the right screen with the Markdown Plan
-                            with live_viewport.container():
-                                st.info("👀 **Focus Mode:** Drafting Architecture Plan...")
-                                st.markdown(plan_data)
-                                
-                        # --- 3. IAC GENERATOR FINISHES ---
-                        elif "iac_generator" in chunk:
-                            status.write("✅ **IaC Generator** wrote the Terraform code.")
-                            code_data = chunk["iac_generator"].get("generated_code", {})
-                            st.session_state.latest_code = code_data
-                            
-                            # Instantly overwrite the right screen with the Terraform Code
-                            with live_viewport.container():
-                                st.info("👀 **Focus Mode:** Generating Terraform...")
-                                with st.container(height=500):
-                                    for filename, content in code_data.items():
-                                        st.markdown(f"### 📄 `{filename}`")
-                                        clean_content = content.replace("\\n", "\n").replace("\\t", "  ")
-                                        st.code(clean_content, language="hcl", line_numbers=True)
-                                    
-                        # --- 4. VALIDATOR LOGS ---
-                        elif "validation_agent" in chunk:
-                            val_data = chunk["validation_agent"]
-                            if val_data.get("validation_passed"):
-                                status.write("✅ **Validation Agent** verified code syntax successfully.")
-                            else:
-                                err = val_data.get('validation_errors', '')
-                                status.write(f"⚠️ **Validation Agent** caught syntax anomalies! Routing back for fixing...")
-                                status.write(f"```\n{err}\n```")
-                
-                status.update(label="Execution Complete!", state="complete", expanded=False)
-                
-                # Unlock streaming mode to bring the tabs back, and refresh the page!
-                st.session_state.is_streaming = False
-                st.rerun() 
-                
-            except Exception as e:
-                st.session_state.is_streaming = False
-                status.update(label="Execution Aborted", state="error")
-                st.error(f"Failed to process graph stream workflow: {e}")
+
+            render_user_prompt(
+                message["content"]
+            )
+
+    elif message["role"] == "assistant":
+
+        with st.chat_message("assistant"):
+            if "content" in message:
+
+                st.markdown(message["content"])
+
+            else:
+
+                render_assistant_output(
+                    msg_id=idx,
+                    summary=message.get("summary", ""),
+                    spec=message.get("spec", {}),
+                    srs=message.get("srs", ""),
+                    plan=message.get("plan", ""),
+                    code=message.get("code", {}),
+                )
+
+# -----------------------------------------------------
+# Chat Input
+# -----------------------------------------------------
+
+placeholder = "Describe the infrastructure you want..."
+
+if (
+    st.session_state.messages
+    and st.session_state.messages[-1]["role"] == "assistant"
+    and "content" in st.session_state.messages[-1]
+):
+    placeholder = "Answer the clarification question..."
+
+if prompt := st.chat_input(placeholder):
+
+    # -------------------------------
+    # Store User Message
+    # -------------------------------
+
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": prompt,
+        }
+    )
+
+    with st.chat_message("user"):
+        render_user_prompt(prompt)
+
+    # -------------------------------
+    # Assistant
+    # -------------------------------
+
+    with st.chat_message("assistant"):
+
+        status = st.empty()
+
+        status.info("🧠 Parsing requirements...")
+
+        final_spec = {}
+        final_plan = ""
+        final_srs = ""
+        final_code = {}
+
+        try:
+
+            response = stream_chat(
+                prompt,
+                st.session_state.thread_id,
+            )
+
+            for line in response.iter_lines():
+
+                if not line:
+                    continue
+
+                event = json.loads(
+                    line.decode("utf-8")
+                )
+
+                # -------------------------
+                # Intent Parser
+                # -------------------------
+
+                if "intent_parser" in event:
+
+                    status.info(
+                        "📝 Building Software Requirements..."
+                    )
+
+                    parser = event["intent_parser"]
+
+                    final_spec = parser.get(
+                        "project_spec",
+                        {},
+                    )
+
+                    #
+                    # TODO:
+                    #
+                    # Later this will come directly
+                    # from LangGraph.
+                    #
+
+                    final_srs = """
+# Software Requirements Specification
+
+The following document summarizes the
+parsed cloud infrastructure requirements.
+
+The infrastructure has been normalized
+into a structured format and will now
+be converted into an architecture plan.
+"""
+
+                # -------------------------
+                # Interrupt
+                # -------------------------
+                if event.get("type") == "interrupt":
+                    print(event)
+
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": event["message"],
+                    })
+
+                    status.empty()
+
+                    refresh_projects()
+                    refresh_history()
+
+                    st.rerun()
+
+                # -------------------------
+                # Architecture Planner
+                # -------------------------
+
+                elif "architecture_planner" in event:
+
+                    status.info(
+                        "🏗️ Designing Architecture..."
+                    )
+
+                    planner = event[
+                        "architecture_planner"
+                    ]
+
+                    final_plan = planner.get(
+                        "architecture_plan",
+                        "",
+                    )
+
+                # -------------------------
+                # Terraform Generator
+                # -------------------------
+
+                elif "iac_generator" in event:
+
+                    status.info(
+                        "💻 Generating Terraform..."
+                    )
+
+                    generator = event[
+                        "iac_generator"
+                    ]
+
+                    final_code = generator.get(
+                        "generated_code",
+                        {},
+                    )
+
+                # -------------------------
+                # Validator
+                # -------------------------
+
+                elif "validation_agent" in event:
+
+                    validator = event[
+                        "validation_agent"
+                    ]
+
+                    if validator.get(
+                        "validation_passed"
+                    ):
+
+                        status.success(
+                            "✅ Validation Passed"
+                        )
+
+                    else:
+
+                        attempt = validator.get(
+                            "validation_attempts",
+                            1,
+                        )
+
+                        status.warning(
+                            f"⚠ Validation failed. "
+                            f"Retrying ({attempt}/3)..."
+                        )
+
+            status.empty()
+
+        except Exception as e:
+
+            status.error(str(e))
+
+            st.stop()
+
+
+
+            # -------------------------------------------------
+        # Final Assistant Response
+        # -------------------------------------------------
+
+        if final_code:
+
+            summary = (
+                "✅ **Infrastructure generated successfully.**\n\n"
+                "Your infrastructure has been analyzed, planned, "
+                "converted into Terraform and validated successfully.\n\n"
+                "Use the buttons below to inspect each artifact."
+            )
+
+            msg_id = len(st.session_state.messages)
+
+            render_assistant_output(
+                msg_id=msg_id,
+                summary=summary,
+                spec=final_spec,
+                srs=final_srs,
+                plan=final_plan,
+                code=final_code,
+            )
+
+            assistant_message = {
+                "role": "assistant",
+                "summary": summary,
+                "spec": final_spec,
+                "srs": final_srs,
+                "plan": final_plan,
+                "code": final_code,
+            }
+
+            st.session_state.messages.append(
+                assistant_message
+            )
+
+            # -----------------------------------------
+            # Refresh cached backend data
+            # -----------------------------------------
+
+            refresh_projects()
+
+            refresh_history()
+
+            st.toast(
+                "Infrastructure generated successfully 🚀",
+                icon="✅",
+            )
+
+        else:
+
+            st.warning(
+                "The workflow completed, but no Terraform "
+                "files were generated."
+            )
