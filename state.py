@@ -1,5 +1,6 @@
 import streamlit as st
 import uuid
+import json
 
 
 def init_session_state():
@@ -36,25 +37,29 @@ def load_project(thread_id: str, history: dict):
 
     messages = []
 
-    if history.get("user_prompt"):
-        messages.append(
-            {
-                "role": "user",
-                "content": history["user_prompt"],
-            }
-        )
+    for msg in history.get("messages", []):
 
-    if history.get("code"):
-        messages.append(
-            {
-                "role": "assistant",
-                "summary": "✅ **Infrastructure recovered from history.**",
-                "spec": history.get("spec", {}),
-                "srs": history.get("srs", ""),
-                "plan": history.get("plan", ""),
-                "code": history.get("code", {}),
-            }
-        )
+        message = {
+            "role": msg["role"],
+            "message_type": msg["message_type"]
+        }
+
+        if msg["message_type"] == "final_output":
+            data = json.loads(msg["content"])
+
+            message.update(
+                {
+                    "summary": "✅ **Infrastructure recovered from history.**",
+                    "spec": data.get("spec", {}),
+                    "srs": data.get("srs", ""),
+                    "plan": data.get("architecture", ""),
+                    "code": data.get("terraform", {}),
+                }
+            )
+        else:
+            message["content"] = msg["content"]
+
+        messages.append(message)
 
     st.session_state.messages = messages
 

@@ -42,16 +42,17 @@ def render_sidebar():
         st.subheader("Recent Projects")
 
         threads = get_projects()
-
+        
         if not threads:
 
             st.caption("No saved projects.")
 
             return project_changed
 
-        for thread_id in threads:
+        for thread in threads:
+            display_name = thread["title"]
 
-            display_name = f"Project {thread_id[:8]}"
+            thread_id = thread["thread_id"]
 
             active = (
                 thread_id ==
@@ -60,7 +61,7 @@ def render_sidebar():
 
             if st.button(
                 display_name,
-                key=f"project_{thread_id}",
+                key=f"project_{thread}",
                 use_container_width=True,
                 type="primary" if active else "secondary",
             ):

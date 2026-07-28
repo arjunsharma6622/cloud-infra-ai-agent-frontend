@@ -188,8 +188,6 @@ if prompt := st.chat_input(placeholder):
                 # Interrupt
                 # -------------------------
                 if event.get("type") == "interrupt":
-                    print(event)
-
                     st.session_state.messages.append({
                         "role": "assistant",
                         "content": event["message"],
