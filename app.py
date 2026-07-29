@@ -150,15 +150,15 @@ if prompt := st.chat_input(placeholder):
                     line.decode("utf-8")
                 )
 
+                status.info(
+                    "Parsing the query and generating intent..."
+                )
+
                 # -------------------------
                 # Intent Parser
                 # -------------------------
 
                 if "intent_parser" in event:
-
-                    status.info(
-                        "📝 Building Software Requirements..."
-                    )
 
                     parser = event["intent_parser"]
 
@@ -172,7 +172,6 @@ if prompt := st.chat_input(placeholder):
                 # -------------------------
 
                 if "srs_generator" in event:
-
                     status.info(
                         "📝 Generating SRS Document..."
                     )
@@ -182,6 +181,10 @@ if prompt := st.chat_input(placeholder):
                     final_srs = srs.get(
                         "srs_document",
                         "",
+                    )
+
+                    status.info(
+                        "🏗️ Designing Architecture..."
                     )
 
                 # -------------------------
@@ -206,10 +209,6 @@ if prompt := st.chat_input(placeholder):
 
                 elif "architecture_planner" in event:
 
-                    status.info(
-                        "🏗️ Designing Architecture..."
-                    )
-
                     planner = event[
                         "architecture_planner"
                     ]
@@ -219,15 +218,15 @@ if prompt := st.chat_input(placeholder):
                         "",
                     )
 
+                    status.info(
+                        "💻 Generating Terraform..."
+                    )
+
                 # -------------------------
                 # Terraform Generator
                 # -------------------------
 
                 elif "iac_generator" in event:
-
-                    status.info(
-                        "💻 Generating Terraform..."
-                    )
 
                     generator = event[
                         "iac_generator"
@@ -237,6 +236,8 @@ if prompt := st.chat_input(placeholder):
                         "generated_code",
                         {},
                     )
+
+                    status.info("Validating the generated code...")
 
                 # -------------------------
                 # Validator
