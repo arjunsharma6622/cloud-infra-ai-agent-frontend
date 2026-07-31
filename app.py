@@ -158,16 +158,16 @@ if prompt := st.chat_input(placeholder):
                 # Security Node
                 # -------------------------
 
-                if "security" in event:
+                if "guardrail" in event:
 
-                    security = event["security"]
+                    guardrail = event["guardrail"]
 
-                    if not security.get("security_passed", True):
+                    if not guardrail.get("isCompliant", True):
 
-                        status.error("🚫 Security Violation Detected")
+                        status.error("🚫 Guardrail Violation Detected")
 
-                        reason = security.get(
-                            "security_reason",
+                        reason = guardrail.get(
+                            "guardrailMessage",
                             "The request violates the security policy."
                         )
 
@@ -176,7 +176,7 @@ if prompt := st.chat_input(placeholder):
                         st.session_state.messages.append(
                             {
                                 "role": "assistant",
-                                "content": f"🚫 **Security Violation**\n\n{reason}",
+                                "content": f"🚫 **Guardrail Violation**\n\n{reason}",
                             }
                         )
 
