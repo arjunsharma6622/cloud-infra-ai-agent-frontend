@@ -154,6 +154,36 @@ if prompt := st.chat_input(placeholder):
                     "Parsing the query and generating intent..."
                 )
 
+                                # -------------------------
+                # Security Node
+                # -------------------------
+
+                if "security" in event:
+
+                    security = event["security"]
+
+                    if not security.get("security_passed", True):
+
+                        status.error("🚫 Security Violation Detected")
+
+                        reason = security.get(
+                            "security_reason",
+                            "The request violates the security policy."
+                        )
+
+                        st.error(reason)
+
+                        st.session_state.messages.append(
+                            {
+                                "role": "assistant",
+                                "content": f"🚫 **Security Violation**\n\n{reason}",
+                            }
+                        )
+
+                        refresh_projects()
+                        refresh_history()
+
+                        st.stop()
                 # -------------------------
                 # Intent Parser
                 # -------------------------
