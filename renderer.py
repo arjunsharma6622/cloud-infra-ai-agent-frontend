@@ -1,17 +1,18 @@
 import streamlit as st
 
-
 from dialogs import (
     show_json_modal,
     show_srs_modal,
     show_architecture_modal,
-    show_code_modal,
 )
+
+from deployment_dialog import deploy_dialog
 
 
 def render_user_prompt(prompt: str):
     """Render a user message."""
     st.markdown(prompt)
+
 
 def render_assistant_output(
     msg_id,
@@ -20,6 +21,7 @@ def render_assistant_output(
     srs,
     plan,
     code,
+    deployment=None,
 ):
 
     with st.container(border=True):
@@ -69,4 +71,41 @@ def render_assistant_output(
                 st.code(
                     content,
                     language="hcl",
+                )
+
+        # ----------------------------------
+        # Deployment Section
+        # ----------------------------------
+
+        if deployment:
+
+            st.divider()
+
+            st.success("🚀 Deployment Ready")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.write(f"**Branch:** {deployment['branch_name']}")
+                st.write(f"**Deployment ID:** {deployment['deployment_id']}")
+
+            with col2:
+                st.link_button(
+                    "🔗 Open Pull Request",
+                    deployment["pr_url"],
+                    use_container_width=True,
+                )
+
+            st.info(
+                "Please review the Pull Request and Terraform before deployment."
+            )
+
+            if st.button(
+                "🚀 Deploy Infrastructure",
+                key=f"deploy_{msg_id}",
+                use_container_width=True,
+            ):
+                deploy_dialog(
+                    deployment,
+                    code,
                 )

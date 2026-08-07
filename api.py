@@ -100,3 +100,22 @@ def refresh_history(thread_id=None):
     """
 
     get_project_history.clear()
+
+
+def deploy_infrastructure(pr_number: int):
+    """
+    Calls backend deploy endpoint.
+    """
+
+    response = requests.post(
+        f"{BASE_URL}/deploy",
+        json={
+            "pr_number": pr_number,
+            "confirmation": "YES",
+        },
+        timeout=TIMEOUT,
+    )
+
+    response.raise_for_status()
+
+    return response.json()

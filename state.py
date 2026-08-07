@@ -13,6 +13,8 @@ def init_session_state():
         "project_cache": {},
         "active_project": None,
         "is_streaming": False,
+        "deployment": None,
+        "deployment_started": False,
     }
 
     for key, value in defaults.items():

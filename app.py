@@ -88,6 +88,7 @@ for idx, message in enumerate(st.session_state.messages):
                     srs=message.get("srs", ""),
                     plan=message.get("plan", ""),
                     code=message.get("code", {}),
+                    deployment=message.get("deployment"),
                 )
 
 # -----------------------------------------------------
@@ -149,7 +150,17 @@ if prompt := st.chat_input(placeholder):
                 event = json.loads(
                     line.decode("utf-8")
                 )
+                # -------------------------
+# Deployment Metadata
+# -------------------------
 
+                if event.get("type") == "deployment":
+                    print("=" * 60)
+                    print(event)
+                    print("=" * 60)
+                    st.session_state.deployment = event["deployment"]
+
+                    continue
                 status.info(
                     "Parsing the query and generating intent..."
                 )
@@ -331,6 +342,7 @@ if prompt := st.chat_input(placeholder):
                 srs=final_srs,
                 plan=final_plan,
                 code=final_code,
+                deployment=st.session_state.deployment,
             )
 
             assistant_message = {
@@ -340,6 +352,7 @@ if prompt := st.chat_input(placeholder):
                 "srs": final_srs,
                 "plan": final_plan,
                 "code": final_code,
+                "deployment": st.session_state.deployment,
             }
 
             st.session_state.messages.append(
