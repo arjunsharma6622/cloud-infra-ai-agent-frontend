@@ -50,7 +50,7 @@ def get_project_history(thread_id: str):
 
 
 # -------------------------------
-# Streaming API
+# Backend Status Stream
 # -------------------------------
 
 def stream_chat(prompt: str, thread_id: str):

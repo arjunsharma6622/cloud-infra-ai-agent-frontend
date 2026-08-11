@@ -106,9 +106,9 @@ if (
 
 if prompt := st.chat_input(placeholder):
 
-    # -------------------------------
-    # Store User Message
-    # -------------------------------
+    # -----------------------------------------
+    # Store user message
+    # -----------------------------------------
 
     st.session_state.messages.append(
         {
@@ -120,21 +120,13 @@ if prompt := st.chat_input(placeholder):
     with st.chat_message("user"):
         render_user_prompt(prompt)
 
-    # -------------------------------
+    # -----------------------------------------
     # Assistant
-    # -------------------------------
+    # -----------------------------------------
 
     with st.chat_message("assistant"):
 
         status = st.empty()
-
-        status.info("🧠 Parsing requirements...")
-
-        final_spec = {}
-        final_plan = ""
-        final_project_plan = ""
-        final_srs = ""
-        final_code = {}
 
         try:
 
@@ -142,6 +134,12 @@ if prompt := st.chat_input(placeholder):
                 prompt,
                 st.session_state.thread_id,
             )
+
+            final_output = None
+
+            # -------------------------------------
+            # Backend event stream
+            # -------------------------------------
 
             for line in response.iter_lines():
 
@@ -152,51 +150,25 @@ if prompt := st.chat_input(placeholder):
                     line.decode("utf-8")
                 )
 
-                status.info(
-                    "Parsing the query and generating intent..."
-                )
-
-                # -------------------------
-                # Intent Parser
-                # -------------------------
-
-                if "intent_parser" in event:
-
-                    parser = event["intent_parser"]
-
-                    final_spec = parser.get(
-                        "project_spec",
-                        {},
-                    )
-
-                # -------------------------
-                # SRS Generator
-                # -------------------------
-
-                if "srs_generator" in event:
-                    status.info(
-                        "📝 Generating SRS Document..."
-                    )
-
-                    srs = event["srs_generator"]
-
-                    final_srs = srs.get(
-                        "srs_document",
-                        "",
-                    )
+                # Status event
+                if event.get("type") == "status":
 
                     status.info(
-                        "🏗️ Designing Architecture..."
+                        event.get(
+                            "message",
+                            "Working..."
+                        )
                     )
 
-                # -------------------------
-                # Interrupt
-                # -------------------------
-                if event.get("type") == "interrupt":
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": event["message"],
-                    })
+                # Clarification
+                elif event.get("type") == "interrupt":
+
+                    st.session_state.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": event["message"],
+                        }
+                    )
 
                     status.empty()
 
@@ -205,135 +177,111 @@ if prompt := st.chat_input(placeholder):
 
                     st.rerun()
 
-                # -------------------------
-                # Architecture Planner
-                # -------------------------
+                # Final output
+                elif event.get("type") == "complete":
 
-                elif "architecture_planner" in event:
-
-                    planner = event[
-                        "architecture_planner"
-                    ]
-
-                    final_plan = planner.get(
-                        "architecture_plan",
-                        "",
+                    final_output = event.get(
+                        "output",
+                        {}
                     )
 
-                    status.info(
-                        "💻 Generating Terraform..."
-                    )
-
-                # -------------------------
-                # Terraform Generator
-                # -------------------------
-
-                elif "iac_generator" in event:
-
-                    generator = event[
-                        "iac_generator"
-                    ]
-
-                    final_code = generator.get(
-                        "generated_code",
-                        {},
-                    )
-
-                    status.info("Validating the generated code...")
-
-                # -------------------------
-                # Validator
-                # -------------------------
-
-                elif "validation_agent" in event:
-
-                    validator = event[
-                        "validation_agent"
-                    ]
-
-                    if validator.get(
-                        "validation_passed"
-                    ):
+                    if event.get("success"):
 
                         status.success(
-                            "✅ Validation Passed"
+                            "✅ Infrastructure generated "
+                            "and validated successfully."
                         )
 
                     else:
 
-                        attempt = validator.get(
-                            "validation_attempts",
-                            1,
+                        status.error(
+                            "❌ Infrastructure generation "
+                            "could not be completed."
                         )
 
-                        status.warning(
-                            f"⚠ Validation failed. "
-                            f"Retrying ({attempt}/3)..."
-                        )
+            # -------------------------------------
+            # Final result
+            # -------------------------------------
 
-            status.empty()
+            if final_output:
+
+                final_spec = final_output.get(
+                    "project_spec",
+                    {}
+                )
+
+                final_srs = final_output.get(
+                    "srs",
+                    ""
+                )
+
+                final_plan = final_output.get(
+                    "architecture",
+                    ""
+                )
+
+                final_project_plan = final_output.get(
+                    "project_plan",
+                    {}
+                )
+
+                final_code = final_output.get(
+                    "terraform",
+                    {}
+                )
+
+                summary = (
+                    "✅ **Infrastructure generated successfully.**\n\n"
+                    "Your infrastructure has been analyzed, planned, "
+                    "generated and validated successfully.\n\n"
+                    "Use the buttons below to inspect each artifact."
+                )
+
+                msg_id = len(
+                    st.session_state.messages
+                )
+
+                render_assistant_output(
+                    msg_id=msg_id,
+                    summary=summary,
+                    spec=final_spec,
+                    srs=final_srs,
+                    plan=final_plan,
+                    project_plan=final_project_plan,
+                    code=final_code,
+                )
+
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "summary": summary,
+                        "spec": final_spec,
+                        "srs": final_srs,
+                        "plan": final_plan,
+                        "project_plan": final_project_plan,
+                        "code": final_code,
+                    }
+                )
+
+                refresh_projects()
+                refresh_history()
+
+                st.toast(
+                    "Infrastructure generated successfully 🚀",
+                    icon="✅",
+                )
+
+            else:
+
+                st.warning(
+                    "The workflow completed, but no final "
+                    "output was returned."
+                )
 
         except Exception as e:
 
-            status.error(str(e))
+            status.error(
+                f"❌ {str(e)}"
+            )
 
             st.stop()
-
-
-
-            # -------------------------------------------------
-        # Final Assistant Response
-        # -------------------------------------------------
-
-        if final_code:
-
-            summary = (
-                "✅ **Infrastructure generated successfully.**\n\n"
-                "Your infrastructure has been analyzed, planned, "
-                "converted into Terraform and validated successfully.\n\n"
-                "Use the buttons below to inspect each artifact."
-            )
-
-            msg_id = len(st.session_state.messages)
-
-            render_assistant_output(
-                msg_id=msg_id,
-                summary=summary,
-                spec=final_spec,
-                srs=final_srs,
-                plan=final_plan,
-                code=final_code,
-            )
-
-            assistant_message = {
-                "role": "assistant",
-                "summary": summary,
-                "spec": final_spec,
-                "srs": final_srs,
-                "plan": final_plan,
-                "code": final_code,
-            }
-
-            st.session_state.messages.append(
-                assistant_message
-            )
-
-            # -----------------------------------------
-            # Refresh cached backend data
-            # -----------------------------------------
-
-            refresh_projects()
-
-            refresh_history()
-
-            st.toast(
-                "Infrastructure generated successfully 🚀",
-                icon="✅",
-            )
-
-        else:
-
-            st.warning(
-                "The workflow completed, but no Terraform "
-                "files were generated."
-            )

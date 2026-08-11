@@ -50,7 +50,7 @@ def load_project(thread_id: str, history: dict):
             message.update(
                 {
                     "summary": "✅ **Infrastructure recovered from history.**",
-                    "spec": data.get("spec", {}),
+                    "spec": data.get("project_spec", {}),
                     "srs": data.get("srs", ""),
                     "plan": data.get("architecture", ""),
                     "project_plan": data.get("project_plan", {}),
