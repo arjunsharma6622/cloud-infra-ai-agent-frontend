@@ -53,6 +53,7 @@ def load_project(thread_id: str, history: dict):
                     "spec": data.get("spec", {}),
                     "srs": data.get("srs", ""),
                     "plan": data.get("architecture", ""),
+                    "project_plan": data.get("project_plan", {}),
                     "code": data.get("terraform", {}),
                 }
             )

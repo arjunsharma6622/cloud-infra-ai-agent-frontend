@@ -5,6 +5,7 @@ from dialogs import (
     show_json_modal,
     show_srs_modal,
     show_architecture_modal,
+    show_project_plan_modal,
     show_code_modal,
 )
 
@@ -19,6 +20,7 @@ def render_assistant_output(
     spec,
     srs,
     plan,
+    project_plan,
     code,
 ):
 
@@ -30,7 +32,7 @@ def render_assistant_output(
 
         st.markdown("#### 📦 Generated Artifacts")
 
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
 
         with c1:
             if st.button(
@@ -56,17 +58,31 @@ def render_assistant_output(
             ):
                 show_architecture_modal(plan)
 
+        with c4:
+            if st.button(
+                "📐 Project Plan",
+                key=f"plan_{msg_id}",
+                use_container_width=True,
+            ):
+                show_project_plan_modal(project_plan)
+
         st.divider()
 
-        st.subheader("Terraform Files")
+        st.subheader("Terraform Project")
 
-        for filename, content in code.items():
+        if not code:
+            st.info("No Terraform files generated.")
+            return
+
+        for filepath, content in code.items():
 
             with st.expander(
-                f"📄 {filename}",
+                f"📄 {filepath}",
                 expanded=False,
             ):
+
                 st.code(
                     content,
                     language="hcl",
                 )
+

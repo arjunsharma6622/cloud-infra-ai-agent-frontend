@@ -87,6 +87,7 @@ for idx, message in enumerate(st.session_state.messages):
                     spec=message.get("spec", {}),
                     srs=message.get("srs", ""),
                     plan=message.get("plan", ""),
+                    project_plan=message.get("project_plan", {}),
                     code=message.get("code", {}),
                 )
 
@@ -131,6 +132,7 @@ if prompt := st.chat_input(placeholder):
 
         final_spec = {}
         final_plan = ""
+        final_project_plan = ""
         final_srs = ""
         final_code = {}
 
